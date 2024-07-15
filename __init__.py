@@ -5,6 +5,39 @@ from urllib.request import urlopen
 from werkzeug.utils import secure_filename
 import sqlite3
 
+pip install Flask-HTTPAuth
+
+from flask_httpauth import HTTPBasicAuth
+auth = HTTPBasicAuth()
+
+users = {
+    "user": "12345"
+}
+
+@auth.verify_password
+def verify_password(username, password):
+    if username in users:
+        return users.get(username) == password
+    return False
+
+@app.route('/fiche_nom/')
+@auth.login_required
+def recherche_par_nom():
+    nom_client = request.args.get('nom')
+    if nom_client:
+        conn = sqlite3.connect('database.db')
+        c = conn.cursor()
+        c.execute("SELECT * FROM clients WHERE nom = ?", (nom_client,))
+        resultats = c.fetchall()
+        conn.close()
+        if resultats:
+            return jsonify(resultats)  # Retourne les résultats en format JSON
+        else:
+            return "Aucun client trouvé avec ce nom", 404
+    else:
+        return "Veuillez spécifier un nom de client", 400
+
+
 app = Flask(__name__)                                                                                                                  
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'  # Clé secrète pour les sessions
 
